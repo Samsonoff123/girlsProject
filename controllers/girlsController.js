@@ -41,22 +41,22 @@ class GirlsController {
         return res.json(devices)
     }
 
-    async getByPriceLowToHight(req, res) {
-        let {limit, page } = req.query
+    async getByAge(req, res) {
+        let {limit, page, lowToHight, hightToLow } = req.query
         let { id } = req.params
         page = page || 1
         limit = limit || 10
         let offset = page * limit - limit
+
+        const sortBy = lowToHight ? 'ASC' : hightToLow ? 'DESC' : 'ASC'
+
         const devices = await Girls.findAndCountAll({  
             where: {
               typeId: id  
             }, 
             limit, offset,
-            attributes: {
-                exclude: ['html', 'variations', 'sliderImg']
-            }, 
             order: [
-                ['price', 'ASC'],
+                ['age', sortBy],
             ],
         })
 
@@ -64,28 +64,6 @@ class GirlsController {
         return res.json(devices)
     }
 
-    async getByPriceHightToLow(req, res) {
-        let {limit, page } = req.query
-        let { id } = req.params
-        page = page || 1
-        limit = limit || 10
-        let offset = page * limit - limit
-        const devices = await Girls.findAndCountAll({  
-            where: {
-              typeId: id  
-            }, 
-            limit, offset,
-            attributes: {
-                exclude: ['html', 'variations', 'sliderImg']
-            }, 
-            order: [
-                ['price', 'DESC'],
-            ],
-        })
-
-
-        return res.json(devices)
-    }
 
     async getAllByType(req, res) { 
         let {limit, page } = req.query
