@@ -42,46 +42,83 @@ class GirlsController {
     }
 
     async getByAge(req, res) {
+        console.log("test");
         let {limit, page, lowToHight, hightToLow } = req.query
-        let { id } = req.params
         page = page || 1
-        limit = limit || 10
+        limit = limit || 100
         let offset = page * limit - limit
+
+        lowToHight = !!lowToHight || false
+        hightToLow = !!hightToLow || false
 
         const sortBy = lowToHight ? 'ASC' : hightToLow ? 'DESC' : 'ASC'
 
         const devices = await Girls.findAndCountAll({  
-            where: {
-              typeId: id  
-            }, 
             limit, offset,
             order: [
                 ['age', sortBy],
             ],
         })
-
-
         return res.json(devices)
     }
 
-
-    async getAllByType(req, res) { 
-        let {limit, page } = req.query
-        let { id } = req.params
+    async getByWeight(req, res) {
+        let {limit, page, lowToHight, hightToLow } = req.query
         page = page || 1
-        limit = limit || 10
+        limit = limit || 100
         let offset = page * limit - limit
+
+        lowToHight = !!lowToHight || false
+        hightToLow = !!hightToLow || false
+
+        const sortBy = lowToHight ? 'ASC' : hightToLow ? 'DESC' : 'ASC'
+
         const devices = await Girls.findAndCountAll({  
-            where: {
-              typeId: id  
-            }, 
             limit, offset,
-            attributes: {
-                exclude: ['html', 'variations', 'sliderImg']
-            }, 
+            order: [
+                ['weight', sortBy],
+            ],
         })
+        return res.json(devices)
+    }
 
+    async getByHeight(req, res) {
+        let {limit, page, lowToHight, hightToLow } = req.query
+        page = page || 1
+        limit = limit || 100
+        let offset = page * limit - limit
 
+        lowToHight = !!lowToHight || false
+        hightToLow = !!hightToLow || false
+
+        const sortBy = lowToHight ? 'ASC' : hightToLow ? 'DESC' : 'ASC'
+
+        const devices = await Girls.findAndCountAll({  
+            limit, offset,
+            order: [
+                ['height', sortBy],
+            ],
+        })
+        return res.json(devices)
+    }
+
+    async getByHeight(req, res) {
+        let {limit, page, lowToHight, hightToLow } = req.query
+        page = page || 1
+        limit = limit || 100
+        let offset = page * limit - limit
+
+        lowToHight = !!lowToHight || false
+        hightToLow = !!hightToLow || false
+
+        const sortBy = lowToHight ? 'ASC' : hightToLow ? 'DESC' : 'ASC'
+
+        const devices = await Girls.findAndCountAll({  
+            limit, offset,
+            order: [
+                ['height', sortBy],
+            ],
+        })
         return res.json(devices)
     }
 
@@ -90,30 +127,43 @@ class GirlsController {
         const device = await Girls.findOne(
             {
                 where: {id},
-                include: [{model: DeviceInfo, as: 'info'}]
             }
         )
 
-        const similarDevices = await Girls.findAll(
-            {
-                where: {
-                    tag: {
-                        [Op.match]: Sequelize.fn('to_tsquery', device.tag.replaceAll(' ', ' & '))
-                    }
-                },
-                attributes: {exclude: ['html', 'sliderImg']}
-            }
-        )
+        return res.json(device)
+    }
 
-        const typeDevices = await Girls.findAll(
-            {
-               where: {
-                typeId: device.typeId
-               },
-               attributes: {exclude: ['html', 'variations', 'sliderImg']}
-            }
-        )
-        return res.json({device, typeDevices, similarDevices})
+    async update (req, res) {
+        try {
+            const devices = await Girls.findAll()
+
+            devices.forEach(async(d) => {
+                const age = d.age
+                const weight = d.weight
+                const boobs = d.boobs
+
+                await Girls.update(
+                    { 
+                        age: age ? +age : age,
+                        weight: weight ? weight.split('кг')[0] : weight,
+                        boobs: boobs ? +boobs : boobs
+                     },
+                    { where: { id: d.id } }
+                )
+            })
+    
+
+
+            
+            
+            return res.json('success')
+    
+        } catch (err) {
+            console.log(err);
+            res.status(500).json({
+                message: 'Не удалось получить девайс'
+            })
+        }
     }
 
     async remove (req, res) {
@@ -141,7 +191,7 @@ class GirlsController {
         try {
             let { link } = req.body 
 
-            for(let i = 1; true; i++) {
+            for(let i = 1; i < 45; i++) {
                     const html = await axios.get(`${link}/${i}`)
 
                     const root = parse(html.data)
@@ -154,11 +204,11 @@ class GirlsController {
                             const price = {
                                 html: p?.querySelector('.pricetable').outerHTML
                             }
-                            const height = p?.querySelector('.fastdata .grey')?.innerText || ''
-                            const age = p?.querySelectorAll('.fastdata')[1]?.querySelector('.grey')?.innerText || ''
-                            const weight = p?.querySelectorAll('.fastdata')[0]?.querySelectorAll('.grey')[1]?.innerText || ''
+                            const height = +p?.querySelector('.fastdata .grey')?.innerText.split('см')[0] || 160
+                            const age = +p?.querySelectorAll('.fastdata')[1]?.querySelector('.grey')?.innerText || 18
+                            const weight = +p?.querySelectorAll('.fastdata')[0]?.querySelectorAll('.grey')[1]?.innerText.split('кг')[0] || 60
                             const nation = p?.querySelectorAll('.fastdata')[1]?.querySelectorAll('.grey')[1]?.innerText || ''
-                            const boobs = p?.querySelectorAll('.fastdata')[0]?.querySelectorAll('.grey')[2]?.innerText || ''
+                            const boobs = +p?.querySelectorAll('.fastdata')[0]?.querySelectorAll('.grey')[2]?.innerText || 0.0
                             const skills = p?.querySelectorAll('.gold li')?.map(e => e.innerText) || []
                             const img = 'https://kiz4dar-kppp.net/img' + p?.querySelector('.picture-box img')?.rawAttrs?.split('/img')[1].split('"')[0] || ''
                             const address = p?.querySelector('.white p')?.innerText || ''
@@ -167,7 +217,7 @@ class GirlsController {
                             const imgType = p?.querySelector('.pic-status.m5')?.innerText || ''
 
                             setTimeout(async() => {
-                                await Girls.create({name, price, height, age, weight, nation, boobs, skills, img, address, about, phone, imgType});
+                                await Girls.create({name, price, height, age, weight, nation, boobs, skills, img, address, about, phone, imgType, comments: []});
                             }, 800);
                         })
                     }, 800)
