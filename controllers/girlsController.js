@@ -32,23 +32,12 @@ class GirlsController {
     }  
   
     async getAll(req, res) {
-        let {brandId, typeId, limit, page } = req.query
+        let {limit, page } = req.query
         page = page || 1
         limit = limit || 100
         let offset = page * limit - limit
-        let devices
-        if(!brandId && !typeId) {
-            devices = await Girls.findAndCountAll({limit, offset, attributes: {exclude: ['html', 'variations', 'sliderImg']},})
-        }
-        if (brandId && !typeId) {
-            devices = await Girls.findAndCountAll( {where:{brandId}, attributes: {exclude: ['html', 'variations', 'sliderImg']},})
-        }
-        if (!brandId && typeId) {
-            devices = await Girls.findAndCountAll({where:{typeId}, limit, offset, attributes: {exclude: ['html', 'variations', 'sliderImg']},})
-        }
-        if (brandId && typeId) {
-            devices = await Girls.findAndCountAll( {where:{typeId, brandId}, limit, offset, attributes: {exclude: ['html', 'variations', 'sliderImg']},})
-        }
+        
+        let devices = await Girls.findAndCountAll({limit, offset,})
         return res.json(devices)
     }
 
@@ -175,38 +164,37 @@ class GirlsController {
             let { link } = req.body 
 
             for(let i = 1; true; i++) {
-                const html = await axios.get(`${link}/${i}`)
+                    const html = await axios.get(`${link}/${i}`)
 
-                if (!html) {
-                    break
-                }
+                    const root = parse(html.data)
 
-                const root = parse(html.data)
+                    const page = root?.querySelectorAll('.box.profilebox') || []
 
-                if (!root) {
-                    break
-                }
-                
-                const page = root.querySelectorAll('.box.profilebox')
+                    setTimeout(() => {
+                        page?.forEach(async(p) => {
+                            const name = p?.querySelector('.name.h3')?.innerText || ''
+                            const price = {
+                                html: p?.querySelector('.pricetable').outerHTML
+                            }
+                            const height = p?.querySelector('.fastdata .grey')?.innerText || ''
+                            const age = p?.querySelectorAll('.fastdata')[1]?.querySelector('.grey')?.innerText || ''
+                            const weight = p?.querySelectorAll('.fastdata')[0]?.querySelectorAll('.grey')[1]?.innerText || ''
+                            const nation = p?.querySelectorAll('.fastdata')[1]?.querySelectorAll('.grey')[1]?.innerText || ''
+                            const boobs = p?.querySelectorAll('.fastdata')[0]?.querySelectorAll('.grey')[2]?.innerText || ''
+                            const skills = p?.querySelectorAll('.gold li')?.map(e => e.innerText) || []
+                            const img = 'https://kiz4dar-kppp.net/img' + p?.querySelector('.picture-box img')?.rawAttrs?.split('/img')[1].split('"')[0] || ''
+                            const address = p?.querySelector('.white p')?.innerText || ''
+                            const about = p?.querySelectorAll('.white p')[1]?.innerText || ''
+                            const phone = p?.querySelector('.phone-box a')?.innerText || ''
+                            const imgType = p?.querySelector('.pic-status.m5')?.innerText || ''
 
-                page.forEach(async(p) => {
-                    const name = p.querySelector('.name.h3').innerText
-                    const price = {
-                        html: p.querySelector('.pricetable')
-                    }
-                    const height = p.querySelector('.fastdata .grey').innerText
-                    const age = p.querySelectorAll('.fastdata')[1].querySelector('.grey').innerText
-                    const weight = p.querySelectorAll('.fastdata')[0].querySelectorAll('.grey')[1].innerText
-                    const nation = p.querySelectorAll('.fastdata')[1].querySelectorAll('.grey')[1].innerText
-                    const boobs = p.querySelectorAll('.fastdata')[2].querySelectorAll('.grey')[2].innerText
-                    const skills = p.querySelectorAll('.gold li').map(e => e.innerText)
-                    const img = p.querySelector('.picture-box img').src
-                    const address = p.querySelector('.white p').innerText
-                    const about = p.querySelectorAll('.white p')[1].innerText
-                    const phone = p.querySelector('.phone-box a').innerText
+                            setTimeout(async() => {
+                                await Girls.create({name, price, height, age, weight, nation, boobs, skills, img, address, about, phone, imgType});
+                            }, 800);
+                        })
+                    }, 800)
+                console.log(i);
 
-                    await Girls.create({name, price, height, age, weight, nation, boobs, skills, img, address, about, phone});
-                })
             }
 
             return res.json("sucsess")
